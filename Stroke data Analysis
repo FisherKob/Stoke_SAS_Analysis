@@ -1,0 +1,95 @@
+/* Import the data */
+proc import datafile='/home/nischalsubedi1230/Stroke.csv' dbms=csv out=stroke replace;
+
+
+proc means data=stroke;
+run;
+
+/* using macro to get the histogram of the age */
+%macro x(v=);
+proc univariate data=stroke;
+var &v;
+histogram;
+run;
+%mend x;
+%x(v=age);
+
+/* get the frequency plot for work type */
+
+proc sgplot;
+vbar work_type;
+title 'Count of people on work type';
+run;
+
+
+/* using t test to test the hypothesis that the true mean is equal to 42 */
+proc ttest H0=42;
+var age;
+run;
+
+
+/* using t test to test the hypothesis that the true mean is greater than 42 */
+proc ttest H0=42 side=U;
+var age;
+run;
+
+/*  test if the true mean number of glucose level is greater than the true number of bmi also provide the confidence  */
+/*  interval on the true difference between mean average of glucose level and bmi, using the confidence interval of 0.01 */
+
+proc freq data= stroke;
+table residence_type/list;
+run;
+
+/*  test if the true mean level of bmi for rural residence type is equal the true mean level of  */
+/*  bmi for urban, and also provide the confidence interval using the confidence interval of 0.01. */
+proc ttest data=stroke sides=2 alpha=0.05 h0=0;
+ 	title "Two sample t-test example";
+ 	class residence_type; 
+	var bmi;
+   run;
+   
+ 
+/*  create a new variable that assesses if a person has at least 180 average glucose level. Then test if the true mean for a person having at */
+/*  least 180 is different for rural and urban residence type. */
+/*  Also provide the confidence interval on the true difference in 180+ groups between two residence types with the significance level of 0.10  */
+ 
+ proc freq data=stroke;
+ table avg_glucose_level;
+ run;
+ 
+ data stroke_v1;
+ set stroke;
+ if avg_glucose_level>=180 then High_Glucose='Yes';
+ else  High_Glucose='No';
+ run;
+ 
+ proc freq data=stroke_v1;
+ tables residence_type*High_Glucose/chisq riskdiff alpha=0.10;
+ run;
+ 
+ 
+ proc freq data= stroke_v1;
+ table smoking_status;
+ run;
+ 
+/*  Test if there is difference between the true average number of bmi by the different smoking status using the significance level of 0.05.  */
+proc anova;
+class smoking_status;
+model bmi=smoking_status;
+means smoking_status /tukey;
+run;
+
+/* create a scatterplot and a regression to see if there is any relationship between the age and the average glucose level.   */
+ 
+ proc sgplot data=stroke;
+ title 'Scatterplot of age vs average glocuse level';
+ reg x=age y=avg_glucose_level;
+ xaxis label='=Age';
+ yaxis label='Average glucose level';
+ run; 
+ 
+ proc reg data= stroke;
+ model age=avg_glucose_level;
+ run;
+ 
+ 
